@@ -38,6 +38,6 @@ while True:
     else:
         logging.info(f"[{dt.now()}]:aircraft.json has not changed. sleeping")
 
-    t = random.uniform(60, 320)
+    t = random.uniform(2, 5)
     logging.info(f"[{dt.now()}]:Sleeping for {t} seconds")
     time.sleep(t)
