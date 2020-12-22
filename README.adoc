@@ -1,0 +1,44 @@
+= PiAware Parser 
+joshua.faust@sevrosecurity.com
+:toc:
+
+If you're using the https://flightaware.com/adsb/piaware/build[Raspberry Pi w/ the FlightAware distro], this package allows you to save aircraft information to your local system. This is very much a hacky script for the time being. 
+
+== How it works
+
+Flight aware uses a dynamic json file `/run/dump1090-fa/aircraft.json` which is the base information you will see within your SkyAware Web dashboard. This package reads the data from the file, writes the data to a persistent gzipped CSV file, and continually checks for changes within `aircraft.json`. 
+
+Essentially:
+
+. Read `aircraft.json`
+. Check if user has FlightAware V3 API access and wants to use it.
+.. This is to enrich the data if you do have access. 
+. Write GZIPPED CSV data to a persistent file.
+.. Filename is: `aircraft_<date>.csv.gz`
+. Check if `aircraft.json` has new data.
+
+== FlightAware Version 3.0 Beta
+
+This package can use the V3 of the https://flightaware.com/commercial/flightxml/v3/content.rvt[FlightAware API] to enrich the data and include:
+
+* Airline
+* Flight Number
+* Tail Number
+
+If you have an API user/key, use the `flightaware.conf` to hold your values. This API is in BETA and it looks like they're not accepting any more beta testing applications. However, whenever this does become public, we have native support. 
+
+== How to use
+
+* Python 3.8+
+* `pip install -r requirements.txt`
+
+[source, text]
+----
+usage: backup_aircraft.py [-h] [-a]
+
+optional arguments:
+  -h, --help    show this help message and exit
+  -a, --useapi  Use the FlightAware V3 api to enrich aircraft data
+----
+
+
