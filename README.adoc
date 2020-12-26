@@ -2,7 +2,7 @@
 joshua.faust@sevrosecurity.com
 :toc:
 
-If you're using the https://flightaware.com/adsb/piaware/build[Raspberry Pi w/ the FlightAware distro], this package allows you to save aircraft information to your local system. This is very much a hacky script for the time being. 
+If you're using dump1090-fa on a Raspberry Pi to track aircraft movement, this package allows you to save aircraft information to your local system as well as enrich your data with the https://rapidapi.com/adsbx/api/adsbexchange-com1/pricing[ADSBechanage API].
 
 == How it works
 
@@ -11,21 +11,23 @@ Flight aware uses a dynamic json file `/run/dump1090-fa/aircraft.json` which is 
 Essentially:
 
 . Read `aircraft.json`
-. Check if user has FlightAware V3 API access and wants to use it.
+. Check if user has requested to use https://rapidapi.com/adsbx/api/adsbexchange-com1/pricing[ADSBexchange API].
 .. This is to enrich the data if you do have access. 
 . Write GZIPPED CSV data to a persistent file.
 .. Filename is: `aircraft_<date>.csv.gz`
 . Check if `aircraft.json` has new data.
 
-== FlightAware Version 3.0 Beta
+== ADSBexchange API Feature
 
-This package can use the V3 of the https://flightaware.com/commercial/flightxml/v3/content.rvt[FlightAware API] to enrich the data and include:
+This package can use this api to add the following data points for each flight seen:
 
-* Airline
-* Flight Number
-* Tail Number
+* flight Number
+* Aircraft Registration
+* Aircraft Type
+* Is it Military
+* Country of Origin
 
-If you have an API user/key, use the `flightaware.conf` to hold your values. This API is in BETA and it looks like they're not accepting any more beta testing applications. However, whenever this does become public, we have native support. 
+If you have an API key, use the `enrichment_api.conf` to hold your value.
 
 == How to use
 
