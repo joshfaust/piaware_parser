@@ -173,22 +173,23 @@ def get_local_aircraft_data(aircraft_file_path: str, using_ads_api: bool, using_
                     logging.error(f"[{dt.now()}]-LOCAL_KEY_ERROR: {e}")
                     local_flight_data[local_key] = None
 
+            flight_unique_identifier = build_identifier(local_flight_data["icao"], local_flight_data["ident"])
+            duplicate_check = check_if_duplicate(flight_unique_identifier)
+
+            if not duplicate_check:
             # ADSBExchange API       
-            if using_ads_api:
-                """
-                Check if we've seen this aircraft/flight before, if we have skip the API query
-                as those API calls cost $$. 
-                """
-                flight_unique_identifier = build_identifier(local_flight_data["icao"], local_flight_data["ident"])
-                if (not check_if_duplicate(flight_unique_identifier)): 
+                if using_ads_api:
+                    """
+                    Check if we've seen this aircraft/flight before, if we have skip the API query
+                    as those API calls cost $$. 
+                    """
                     enriched_flight_data = get_api_aircraft_data(local_flight_data["icao"])
                     local_flight_data.update(enriched_flight_data)
-            
-            write_to_gzip_file(output_filename, str(local_flight_data))
 
-            if using_aws_api:
-                write_to_s3(output_filename, "local-aircraft-data")
+                write_to_gzip_file(output_filename, str(local_flight_data))
 
+                if using_aws_api:
+                    write_to_s3(output_filename, "local-aircraft-data")
 
     except KeyError as e:
         logging.error(f"[{dt.now()}]-KEY_ERROR:{e}")
