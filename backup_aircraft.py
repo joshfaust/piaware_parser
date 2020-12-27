@@ -14,7 +14,6 @@ from datetime import date
 logname = f"aircraft_{date.today()}.log"
 logging.basicConfig(filename=logname, level=logging.INFO)
 
-
 # The user may have V3 access and therefore can enrich their data if wanted:
 parser = argparse.ArgumentParser()
 parser.add_argument(

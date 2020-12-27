@@ -54,11 +54,11 @@ def check_if_duplicate(identifier: str) -> None:
         return False
 
 
-def build_identifier(icao: str, ident: str) -> str:
+def build_identifier(icao: str, date: str) -> str:
     """
     Create an MD5 hash from flight icao and ident.
     """
-    hash = hashlib.md5(f"{icao};{ident}".encode("utf-8"))
+    hash = hashlib.md5(f"{icao};{date}".encode("utf-8"))
     return hash.hexdigest()
 
 
@@ -94,44 +94,6 @@ def get_file_hash(file_path: str) -> str:
         logging.error(f"[{dt.now()}]-HASING_ERROR: {e}")
 
 
-def get_api_aircraft_data(icao: str) -> dict:
-    """
-    Given an aircraft ident, uses the FLightAware V3 API
-    to enrich the data by adding the airline, flightnumber,
-    and the tailnumber for the flight.
-    """
-    try:
-        flight_api_data = ads.get_aircraft_by_icao(icao)
-        flight_api_data_json = flight_api_data["ac"][0]
-
-        enriched_flight_data = {
-            "flightnumber": None,
-            "registration": None,
-            "aircraft_type": None,
-            "military": None,
-            "country": None
-        }
-
-        ads_keys = ["call", "reg", "type", "mil", "cou"]
-        enr_keys = list(enriched_flight_data.keys())
-        for i, key in enumerate(enr_keys):
-            try:
-                enriched_flight_data[key] = flight_api_data_json[ads_keys[i]]
-            except KeyError as e:
-                logging.error(f"[{dt.now()}]-API_KEY_ERROR: {e}")
-                enriched_flight_data[key] = None
-
-        return enriched_flight_data
-
-    except json.decoder.JSONDecodeError as e:
-        logging.error(
-            f"[{dt.now()}]-JSON_DECODE_ERROR:{e}"
-        )
-        return flight_data
-    except TypeError as e:
-        logging.error(f"[{dt.now()}]-TYPE_ERROR:{e}")
-        return flight_data
-
 
 def get_local_aircraft_data(aircraft_file_path: str, using_ads_api: bool, using_aws_api: bool) -> None:
     """
@@ -154,15 +116,14 @@ def get_local_aircraft_data(aircraft_file_path: str, using_ads_api: bool, using_
             "ident": None,
             "alt_baro": None,
             "alt_geom": None,
-            "ground_speed": None,
             "track": None,
             "lat": None,
             "lon": None,
         }
 
-        local_flight_data_keys = ["icao", "ident", "alt_baro", "alt_geom", "groud_speed", "track", "lat", "lon"]
-        local_aircraft_conf_keys = ["hex", "flight", "alt_baro", "alt_geom", "gs", "track", "lat", "lon"]
-        flight_epoch = json_data["now"]
+        local_flight_data_keys = ["icao", "ident", "alt_baro", "alt_geom", "track", "lat", "lon"]
+        local_aircraft_conf_keys = ["hex", "flight", "alt_baro", "alt_geom", "track", "lat", "lon"]
+        local_flight_data["epoch"] = json_data["now"]
         for flight in json_data["aircraft"]:
 
             # load the cleaned values into the local dict
@@ -170,10 +131,9 @@ def get_local_aircraft_data(aircraft_file_path: str, using_ads_api: bool, using_
                 try:
                     local_flight_data[local_key] = str(flight[local_aircraft_conf_keys[i]]).strip()
                 except KeyError as e:
-                    logging.error(f"[{dt.now()}]-LOCAL_KEY_ERROR: {e}")
                     local_flight_data[local_key] = None
 
-            flight_unique_identifier = build_identifier(local_flight_data["icao"], local_flight_data["ident"])
+            flight_unique_identifier = build_identifier(local_flight_data["icao"], str(date.today()))
             duplicate_check = check_if_duplicate(flight_unique_identifier)
 
             if not duplicate_check:
@@ -183,7 +143,7 @@ def get_local_aircraft_data(aircraft_file_path: str, using_ads_api: bool, using_
                     Check if we've seen this aircraft/flight before, if we have skip the API query
                     as those API calls cost $$. 
                     """
-                    enriched_flight_data = get_api_aircraft_data(local_flight_data["icao"])
+                    enriched_flight_data = ads.get_aircraft_by_icao(local_flight_data["icao"])
                     local_flight_data.update(enriched_flight_data)
 
                 write_to_gzip_file(output_filename, str(local_flight_data))
