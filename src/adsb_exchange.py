@@ -5,8 +5,18 @@ import configparser
 
 def _get_api_key() -> str:
     config = configparser.ConfigParser()
-    config.read("enrichment_api.conf")
+    config.read("secrets.conf")
     return config.get("adsbexchange", "key")
+
+
+def adsb_api_key_exists() -> bool:
+    """
+    Make sure that the API keys have been entered into secrets.conf
+    """
+    key= _get_api_key()
+    if (key != "None"):
+        return True
+    return False
 
 
 def get_aircraft_by_icao(icao: str) -> dict:

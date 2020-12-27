@@ -1,5 +1,13 @@
+boto3==1.16.43
+botocore==1.19.43
 certifi==2020.12.5
 chardet==4.0.0
+configparser==5.0.1
 idna==2.10
+jmespath==0.10.0
+pkg-resources==0.0.0
+python-dateutil==2.8.1
 requests==2.25.1
+s3transfer==0.3.3
+six==1.15.0
 urllib3==1.26.2

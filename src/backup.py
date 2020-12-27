@@ -10,6 +10,7 @@ import configparser
 import gzip
 import argparse
 import src.adsb_exchange as ads
+import src.aws as aws
 from datetime import datetime as dt
 from datetime import date, timedelta
 
@@ -27,6 +28,18 @@ def write_to_gzip_file(filename: str, data: str) -> None:
     data_bytes = (data + "\n").encode("utf-8")
     with gzip.open(filename, "ab") as f:
         f.write(data_bytes)
+
+
+def write_to_s3(filename: str, bucket_name: str) -> None:
+    """
+    Write a file to AWS S3
+    """
+    if not aws.check_bucket_exists(bucket_name):
+        if not aws.create_bucket(bucket_name):
+            logging.error(f"Unable to Create bucket")
+            exit(1)
+    if not aws.upload_to_s3(bucket_name, filename, filename):
+        logging.error(f"Unable to upload gzipped file to S3")
 
 
 def check_if_duplicate(identifier: str) -> None:
@@ -120,7 +133,7 @@ def get_api_aircraft_data(icao: str) -> dict:
         return flight_data
 
 
-def get_local_aircraft_data(aircraft_file_path: str, has_api: bool) -> None:
+def get_local_aircraft_data(aircraft_file_path: str, using_ads_api: bool, using_aws_api: bool) -> None:
     """
     Takes an boolean value that dictates whether we should attempt
     to enrich our data. Extracts know values from the json stream that
@@ -161,7 +174,7 @@ def get_local_aircraft_data(aircraft_file_path: str, has_api: bool) -> None:
                     local_flight_data[local_key] = None
 
             # ADSBExchange API       
-            if has_api:
+            if using_ads_api:
                 """
                 Check if we've seen this aircraft/flight before, if we have skip the API query
                 as those API calls cost $$. 
@@ -172,6 +185,10 @@ def get_local_aircraft_data(aircraft_file_path: str, has_api: bool) -> None:
                     local_flight_data.update(enriched_flight_data)
             
             write_to_gzip_file(output_filename, str(local_flight_data))
+
+            if using_aws_api:
+                write_to_s3(output_filename, "local-aircraft-data")
+
 
     except KeyError as e:
         logging.error(f"[{dt.now()}]-KEY_ERROR:{e}")
