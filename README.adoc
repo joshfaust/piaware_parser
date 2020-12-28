@@ -21,15 +21,74 @@ Essentially:
 
 == ADSBexchange API Feature
 
-This package can use this api to add the following data points for each flight seen:
+https://rapidapi.com/adsbx/api/adsbexchange-com1/pricing[ADSBexchange API] allows us to enrich the local aircraft data from `aircraft.json` with several new fields. Here is an example of not enriched and enriched:
 
-* flight Number
-* Aircraft Registration
-* Aircraft Type
-* Is it Military
-* Country of Origin
+.Not Enriched
+[source, json]
+----
+{
+    "epoch": 1609112746.1,
+    "icao": "ac6364",
+    "ident": "DAL1936",
+    "alt_baro": "11025",
+    "alt_geom": "10475",
+    "track": "4.5",
+    "lat": "44.350596",
+    "lon": "-93.20506"
+}
+----
 
-If you have an API key, use the `secrets.conf` to hold your value.
+.Enriched
+[source, json]
+----
+{
+    "epoch": 1609112746.1,
+    "icao": "ac6364",
+    "ident": "DAL1936",
+    "alt_baro": "11025",
+    "alt_geom": "10475",
+    "track": "4.5",
+    "lat": "44.350596",
+    "lon": "-93.20506",
+    "ac": [
+        {
+            "postime": "1609112744641",
+            "icao": "AC6364",
+            "reg": "N898DN",
+            "type": "B739",
+            "wtc": "2",
+            "spd": "309.9",
+            "altt": "0",
+            "alt": "11050",
+            "galt": "11060",
+            "talt": "7008",
+            "lat": "44.348877",
+            "lon": "-93.205261",
+            "vsit": "0",
+            "vsi": "-1152",
+            "trkh": "0",
+            "ttrk": "0",
+            "trak": "4.4",
+            "sqk": "6137",
+            "call": "DAL1936",
+            "gnd": "0",
+            "trt": "5",
+            "pos": "1",
+            "mlat": "0",
+            "tisb": "0",
+            "sat": "0",
+            "opicao": "DAL",
+            "cou": "United States",
+            "mil": "0",
+            "interested": "0",
+            "from": "LGA La Guardia New York United States",
+            "to": "BOS General Edward Lawrence Logan Boston United States"
+        }
+    ],
+    "total": 1,
+    "ctime": 1609112746914
+}
+----
 
 == How to use
 
