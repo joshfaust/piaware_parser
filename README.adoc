@@ -4,7 +4,7 @@ joshua.faust@sevrosecurity.com
 
 If you're using dump1090-fa on a Raspberry Pi to track aircraft movement, this package allows you to save aircraft information to your local system and/or AWS S3. 
 
-Functionality to enrich your data with the https://rapidapi.com/adsbx/api/adsbexchange-com1/pricing[ADSBechanage API] as also been added.
+Functionality to enrich your data with the https://rapidapi.com/adsbx/api/adsbexchange-com1/pricing[ADSBechanage API] gas also been added.
 
 == How it works
 
