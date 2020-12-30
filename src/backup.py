@@ -65,6 +65,7 @@ def get_local_aircraft_data(aircraft_file_path: str, using_ads_api: bool, using_
     the cleaned up data to a GZIPPED CSV file.
     """
     try:
+        global SEEN_AIRCRAFT
         output_filename = f"aircraft_{date.today()}.json.gz"
         current_flight_identifiers = [] # Holds most recent flight identifiers for deduplication
 
@@ -135,6 +136,8 @@ def get_local_aircraft_data(aircraft_file_path: str, using_ads_api: bool, using_
         # Check how long program has been running and reset SEEN_AIRCRAFT if needed
         runtime = get_script_runtime()
         if runtime >= 23.0:
+            if using_twilio_api:
+                twil.send_text_message(f"It's been 24 hours!\n- Aircraft Seen: {len(SEEN_AIRCRAFT)}\n- Currently Tracking: {len(current_flight_identifiers)}")
             if reset_seen_aircraft(current_flight_identifiers):
                 logging.info(f"RUNTIME: {runtime}-Resetting SEEN_AIRCRAFT and START_TIME.")
 

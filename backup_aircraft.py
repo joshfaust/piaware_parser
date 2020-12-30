@@ -12,11 +12,12 @@ import src.twilio_api as twil
 from src.adsb_exchange import adsb_api_key_exists
 from src.aws import aws_api_keys_exist
 from datetime import datetime as dt
-from datetime import date
+from datetime import date, timedelta
 
 logname = f"aircraft_{date.today()}.log"
 logging.basicConfig(filename=logname, level=logging.INFO)
 LAST_MESSAGE_SENT = dt.now()
+
 
 # The user may have V3 access and therefore can enrich their data if wanted:
 parser = argparse.ArgumentParser()
@@ -79,7 +80,8 @@ while True:
         backup.get_local_aircraft_data(aircraft_file_path, args.adsb_api, args.aws_api, args.twi_api)
     
     if args.twi_api:
-        if utils.get_time_delta_hours(LAST_MESSAGE_SENT, dt.now()) >= 1:
+        runtime = utils.get_time_delta_hours(dt.now(), LAST_MESSAGE_SENT)
+        if runtime >= 1:
             twil.send_text_message("PiAware is Still Running Successfully!")
             LAST_MESSAGE_SENT = dt.now()
 
