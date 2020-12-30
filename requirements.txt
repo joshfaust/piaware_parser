@@ -6,8 +6,12 @@ configparser==5.0.1
 idna==2.10
 jmespath==0.10.0
 pkg-resources==0.0.0
+PyJWT==2.0.0
 python-dateutil==2.8.1
+pytz==2020.5
 requests==2.25.1
 s3transfer==0.3.3
 six==1.15.0
+twilio==6.50.1
+tzlocal==2.1
 urllib3==1.26.2

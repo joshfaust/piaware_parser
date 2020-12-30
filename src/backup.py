@@ -4,13 +4,12 @@ import logging
 import time
 import src.adsb_exchange as ads
 import src.utilities as utils
+import src.twilio_api as twil
 
 from datetime import datetime as dt
 from datetime import date, timedelta
 
 # GLOBAL
-LOGNAME = f"aircraft_{date.today()}.log"
-logging.basicConfig(filename=LOGNAME, level=logging.INFO)
 START_TIME = dt.now()
 SEEN_AIRCRAFT = set()
 
@@ -47,7 +46,7 @@ def reset_seen_aircraft(current_flight_identifiers: list) -> bool:
         return False
 
 
-def get_time_delta() -> float:
+def get_script_runtime() -> float:
     """
     Calculates the time difference from when the program
     started to the current time
@@ -58,7 +57,7 @@ def get_time_delta() -> float:
     return time_delta_hours
 
 
-def get_local_aircraft_data(aircraft_file_path: str, using_ads_api: bool, using_aws_api: bool) -> None:
+def get_local_aircraft_data(aircraft_file_path: str, using_ads_api: bool, using_aws_api: bool, using_twilio_api: bool) -> None:
     """
     Takes an boolean value that dictates whether we should attempt
     to enrich our data. Extracts know values from the json stream that
@@ -117,20 +116,24 @@ def get_local_aircraft_data(aircraft_file_path: str, using_ads_api: bool, using_
                     we have re-established a connection.
                     """
                     if not bool(enriched_flight_data):
+                        lost_connection = dt.now()
                         logging.error("Starting Internet Connections Checks.")
                         while not utils.check_internet_connection():
                             time.sleep(5)
+                        if using_twilio_api:
+                            twil.send_text_message(f"PiAware Looks to Have Lost Internet Connection at: {lost_connection.strftime('%Y-%m-%d %H:%M:%S')}. It's back up now.")
                         enriched_flight_data = ads.get_aircraft_by_icao(local_flight_data["icao"])
 
                     local_flight_data.update(enriched_flight_data)
 
+                # Write data to local file
                 utils.write_to_gzip_file(output_filename, str(local_flight_data))
 
                 if using_aws_api:
                     utils.write_to_s3(output_filename, "local-aircraft-data")
 
         # Check how long program has been running and reset SEEN_AIRCRAFT if needed
-        runtime = get_time_delta()
+        runtime = get_script_runtime()
         if runtime >= 23.0:
             if reset_seen_aircraft(current_flight_identifiers):
                 logging.info(f"RUNTIME: {runtime}-Resetting SEEN_AIRCRAFT and START_TIME.")

@@ -19,9 +19,17 @@ Essentially:
 .. Filename is: `aircraft_<date>.csv.gz`
 . Check if `aircraft.json` has new data.
 
-== ADSBexchange API Feature
+== Additional API's
 
-https://rapidapi.com/adsbx/api/adsbexchange-com1/pricing[ADSBexchange API] allows us to enrich the local aircraft data from `aircraft.json` with several new fields. Here is an example of not enriched and enriched:
+I've added some optional and configurable APIs if the user wants to use them. These are all turned off by default and are enabled via CLI flags. 
+
+=== ADSB Exchange API
+[%collapsible]
+====
+
+https://rapidapi.com/adsbx/api/adsbexchange-com1/pricing[ADSBexchange API] allows us to enrich the local aircraft data from `aircraft.json` with several new fields. To fully utilize this API, you will need to purchase a monthly license which, will give you an API key that you can add to `secrets.conf`.
+
+Here is an example of not enriched and enriched:
 
 .Not Enriched
 [source, json]
@@ -89,6 +97,39 @@ https://rapidapi.com/adsbx/api/adsbexchange-com1/pricing[ADSBexchange API] allow
     "ctime": 1609112746914
 }
 ----
+====
+
+=== AWS API
+[%collapsible]
+====
+I've build is AWS S3 saving capability. All you need to provide is your AWS account `Access_Key` and `Secret_key` within `secrets.conf` and supply the CLI `--s3` argument to tell the program to save data to S3. 
+
+image::doc/S3.png[]
+====
+
+=== Twilio API
+[%collapsible]
+====
+https://www.twilio.com[Twilio] allows us to send our phones text messages. In this case, a text message is sent to you phone when:
+
+* The script is started
+* After an internet connection outage has been remediated
+* Every hour to let you know your system is functioning properly.
+
+There are certainly more use cases for this in the future but, the main purpose is to let you know if/when your system breaks or goes down. 
+
+To configure Twilio, you'll need to purchase a number and add the following to `secrets.conf`
+
+[source, conf]
+----
+account_sid = <twilio_account_sid>
+auth_token = <twilio_auth_token>
+to_phone_number = <Your Cell Phone Number (i.e. 1234567890)>
+from_phone_number = <Your Twilio Number (i.e. 1234567890)>
+----
+
+====
+
 
 == How to use
 
@@ -99,33 +140,11 @@ https://rapidapi.com/adsbx/api/adsbexchange-com1/pricing[ADSBexchange API] allow
 
 [source, text]
 ----
-usage: backup_aircraft.py [-h] [-a] [--s3]
+usage: backup_aircraft.py [-h] [-a] [-s] [-t]
 
 optional arguments:
   -h, --help    show this help message and exit
-  -a, --useapi  Use the ASDBexchange api to enrich aircraft data
-  --s3          Upload compressed flight data to S3
+  -a, --useapi  Use the FlightAware V3 api to enrich aircraft data
+  -s, --s3      Upload compressed flight data to S3
+  -t, --twilio  Use Twilio to send text messages for outages and uptime info
 ----
-
-=== Examples
-
-.Parse all local aircraft and save to local system:
-[source, bash]
-----
-python backup_aircraft.py
-----
-
-.Parse all local aircraft, save to local system and upload to S3:
-[source, bash]
-----
-python backup_aircraft.py --s3
-----
-
-image::doc/S3.png[]
-
-.Parse all local aircraft, enrich data w ADSBexchange, save to local system, upload to S3:
-[source, bash]
-----
-python backup_aircraft.py -a --s3
-----
-

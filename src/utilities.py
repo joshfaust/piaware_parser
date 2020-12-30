@@ -7,6 +7,7 @@ import src.aws as aws
 
 from datetime import datetime as dt
 
+
 def check_internet_connection() -> bool:
     """
     Checks if we have an internet connection by submitting a
@@ -75,3 +76,12 @@ def get_string_md5(data: str) -> str:
     """
     hash = hashlib.md5(data.encode("utf-8"))
     return hash.hexdigest()
+
+
+def get_time_delta_hours(start: dt, end: dt) -> float:
+    """
+    Calculates the time difference between two datetime objects
+    """
+    time_delta = start - end
+    time_delta_hours = divmod(time_delta.total_seconds(), 3600)[0]
+    return time_delta_hours
