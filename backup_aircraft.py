@@ -5,6 +5,7 @@ import random
 import time
 
 import src.backup as backup
+import src.utilities as utils
 
 from src.adsb_exchange import adsb_api_key_exists
 from src.aws import aws_api_keys_exist
@@ -51,7 +52,7 @@ aircraft_file_path = "/run/dump1090-fa/aircraft.json"
 print("[i] Parser is Running.")
 
 while True:
-    file_hash = backup.get_file_hash(aircraft_file_path)
+    file_hash = utils.get_file_sha256(aircraft_file_path)
 
     if previous_file_hash != file_hash:
         previous_file_hash = file_hash

@@ -92,7 +92,7 @@ https://rapidapi.com/adsbx/api/adsbexchange-com1/pricing[ADSBexchange API] allow
 
 == How to use
 
-* Python 3.8+
+* Python 3.7+
 * `pip install -r requirements.txt`
 * If you're going to use the ADSBexchange API, make sure to add you API key to `secrets.conf`
 * If you want to upload your files to AWS S3, add your credentials to `secrets.conf`

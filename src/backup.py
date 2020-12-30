@@ -1,45 +1,18 @@
 import os
 import json
-import csv
-import hashlib
 import logging
-import requests
 import time
-import random
-import configparser
-import gzip
-import argparse
 import src.adsb_exchange as ads
-import src.aws as aws
+import src.utilities as utils
+
 from datetime import datetime as dt
 from datetime import date, timedelta
 
-logname = f"aircraft_{date.today()}.log"
-logging.basicConfig(filename=logname, level=logging.INFO)
-
-#GLOBAL
+# GLOBAL
+LOGNAME = f"aircraft_{date.today()}.log"
+logging.basicConfig(filename=LOGNAME, level=logging.INFO)
 START_TIME = dt.now()
 SEEN_AIRCRAFT = set()
-
-def write_to_gzip_file(filename: str, data: str) -> None:
-    """
-    Takes a filename and the data to write a gzip stream to.
-    """
-    data_bytes = (data + "\n").encode("utf-8")
-    with gzip.open(filename, "ab") as f:
-        f.write(data_bytes)
-
-
-def write_to_s3(filename: str, bucket_name: str) -> None:
-    """
-    Write a file to AWS S3
-    """
-    if not aws.check_bucket_exists(bucket_name):
-        if not aws.create_bucket(bucket_name):
-            logging.error(f"Unable to Create bucket")
-            exit(1)
-    if not aws.upload_to_s3(bucket_name, filename, filename):
-        logging.error(f"Unable to upload gzipped file to S3")
 
 
 def check_if_duplicate(identifier: str) -> None:
@@ -54,12 +27,24 @@ def check_if_duplicate(identifier: str) -> None:
         return False
 
 
-def build_identifier(icao: str, date: str) -> str:
+def reset_seen_aircraft(current_flight_identifiers: list) -> bool:
     """
-    Create an MD5 hash from flight icao and ident.
+    Given a list of current flight identifiers, sanitize SEEN_AIRCRAFT
+    and reload with the current aircraft identifiers we've just seen
+    in order to mitigate duplication. 
     """
-    hash = hashlib.md5(f"{icao};{date}".encode("utf-8"))
-    return hash.hexdigest()
+    try:
+        global START_TIME, SEEN_AIRCRAFT
+        START_TIME = dt.now()
+        SEEN_AIRCRAFT = set()
+        
+        for ident in current_flight_identifiers:
+            SEEN_AIRCRAFT.add(ident)
+
+        return True
+    except Exception as e:
+        logging.error(e)
+        return False
 
 
 def get_time_delta() -> float:
@@ -73,28 +58,6 @@ def get_time_delta() -> float:
     return time_delta_hours
 
 
-def get_file_hash(file_path: str) -> str:
-    """
-    Obtains a filehash given a file path.
-    """
-    try:
-        if not os.path.isfile(file_path):
-            raise Exception(f"{file_path} does not exist!")
-        sha256_hash = hashlib.sha256()
-
-        with open(file_path, "rb") as f:
-            for chunk in iter(lambda: f.read(4096), b""):
-                sha256_hash.update(chunk)
-
-        file_hash = sha256_hash.hexdigest()
-
-        return file_hash
-
-    except Exception as e:
-        logging.error(f"[{dt.now()}]-HASING_ERROR: {e}")
-
-
-
 def get_local_aircraft_data(aircraft_file_path: str, using_ads_api: bool, using_aws_api: bool) -> None:
     """
     Takes an boolean value that dictates whether we should attempt
@@ -104,6 +67,7 @@ def get_local_aircraft_data(aircraft_file_path: str, using_ads_api: bool, using_
     """
     try:
         output_filename = f"aircraft_{date.today()}.json.gz"
+        current_flight_identifiers = [] # Holds most recent flight identifiers for deduplication
 
         # Pull in the aircrafts.json file
         with open(aircraft_file_path, "r") as aircraft:
@@ -133,7 +97,8 @@ def get_local_aircraft_data(aircraft_file_path: str, using_ads_api: bool, using_
                 except KeyError as e:
                     local_flight_data[local_key] = None
 
-            flight_unique_identifier = build_identifier(local_flight_data["icao"], str(date.today()))
+            flight_unique_identifier = utils.get_string_md5(f"{local_flight_data['icao']};{str(date.today())}")
+            current_flight_identifiers.append(flight_unique_identifier)
             duplicate_check = check_if_duplicate(flight_unique_identifier)
 
             if not duplicate_check:
@@ -144,12 +109,31 @@ def get_local_aircraft_data(aircraft_file_path: str, using_ads_api: bool, using_
                     as those API calls cost $$. 
                     """
                     enriched_flight_data = ads.get_aircraft_by_icao(local_flight_data["icao"])
+
+                    """
+                    Empty dictionaries evaluate as False and in this case, an empty 
+                    dict represents a HTTP error or we lost internet connection. We
+                    need to re-verify we have internet connection and and pause until 
+                    we have re-established a connection.
+                    """
+                    if not bool(enriched_flight_data):
+                        logging.error("Starting Internet Connections Checks.")
+                        while not utils.check_internet_connection():
+                            time.sleep(5)
+                        enriched_flight_data = ads.get_aircraft_by_icao(local_flight_data["icao"])
+
                     local_flight_data.update(enriched_flight_data)
 
-                write_to_gzip_file(output_filename, str(local_flight_data))
+                utils.write_to_gzip_file(output_filename, str(local_flight_data))
 
                 if using_aws_api:
-                    write_to_s3(output_filename, "local-aircraft-data")
+                    utils.write_to_s3(output_filename, "local-aircraft-data")
+
+        # Check how long program has been running and reset SEEN_AIRCRAFT if needed
+        runtime = get_time_delta()
+        if runtime >= 23.0:
+            if reset_seen_aircraft(current_flight_identifiers):
+                logging.info(f"RUNTIME: {runtime}-Resetting SEEN_AIRCRAFT and START_TIME.")
 
     except KeyError as e:
         logging.error(f"[{dt.now()}]-KEY_ERROR:{e}")
