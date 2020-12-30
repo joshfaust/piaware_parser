@@ -144,7 +144,7 @@ usage: backup_aircraft.py [-h] [-a] [-s] [-t]
 
 optional arguments:
   -h, --help    show this help message and exit
-  -a, --useapi  Use the FlightAware V3 api to enrich aircraft data
+  -a, --useapi  Use the ADSBexchange api to enrich aircraft data
   -s, --s3      Upload compressed flight data to S3
   -t, --twilio  Use Twilio to send text messages for outages and uptime info
 ----
