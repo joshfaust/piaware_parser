@@ -43,6 +43,9 @@ def get_aircraft_by_icao(icao: str) -> dict:
     except requests.exceptions.HTTPError as e:
         logging.error(f"ADSB HTTP Exception:{e}")
         return {}
+    except json.JSONDecodeError as e:
+        logging.error(f"JSON_DECODING_ERROR: {r.text}")
+        return {"error":r.text}
 
 
 def get_aircraft_by_registration(reg: str) -> dict:
@@ -64,3 +67,6 @@ def get_aircraft_by_registration(reg: str) -> dict:
     except requests.exceptions.HTTPError as e:
         logging.error(f"ADSB HTTP Exception:{e}")
         return {}
+    except json.JSONDecodeError as e:
+        logging.error(f"JSON_DECODING_ERROR: {r.text}")
+        return {"error":r.text}
